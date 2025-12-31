@@ -11,4 +11,4 @@ services:
       # 预览平台基础URL
       - UPLOAD_PLATFORM_BASE_URL=https://html.luler.top
       # 认证码/项目标识
-      - UPLOAD_CODE=xxxx
+      - UPLOAD_CODE=1dec7206c6
