@@ -125,7 +125,7 @@ AI 会自动生成 HTML 代码并调用 `deploy_html` 工具进行部署，返�
 
 ```bash
 UPLOAD_PLATFORM_BASE_URL=https://html.luler.top  # 预览平台地址
-UPLOAD_CODE=xxxxxx  # 项目标识
+UPLOAD_CODE=1dec7206c6  # 项目标识
 PORT=8989  # 服务端口
 DEBUG=0  # 调试模式（1为开启热重载）
 ```
