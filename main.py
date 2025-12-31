@@ -46,7 +46,7 @@ def create_html_zip(html: str, filename: str = "index.html") -> bytes:
     return zip_buffer.getvalue()
 
 
-async def upload_to_platform(zip_data: bytes, client_ip: str) -> dict:
+async def upload_to_platform(zip_data: bytes) -> dict:
     """
     将ZIP文件上传到第三方平台
 
@@ -55,9 +55,8 @@ async def upload_to_platform(zip_data: bytes, client_ip: str) -> dict:
     - code: 认证码
     - file: ZIP文件
     """
-    # 处理IP地址，将特殊字符替换为下划线
-    safe_ip = client_ip.replace(":", "_")
-    zip_filename = f"{safe_ip}.zip"
+    # zip文件名
+    zip_filename = f"hello_project_mcp.zip"
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         # 构造 multipart/form-data 请求
@@ -100,14 +99,10 @@ async def deploy_html(submission: HtmlSubmission, request: Request) -> UploadRes
 
     流程：
     1. 接收完整的HTML页面代码
-    2. 在内存中打包生成 {client_ip}.zip（包含 index.html）
+    2. 在内存中打包生成 hello_project_mcp.zip（包含 index.html）
     3. 上传到预览平台接口
     4. 返回预览URL
     """
-    # 获取客户端IP（优先从X-Forwarded-For获取，支持反向代理）
-    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.client.host if request.client else "unknown"
 
     try:
         # 1. 在内存中创建ZIP文件
@@ -115,7 +110,7 @@ async def deploy_html(submission: HtmlSubmission, request: Request) -> UploadRes
 
         # 2. 上传到第三方平台
         try:
-            platform_result = await upload_to_platform(zip_data, client_ip)
+            platform_result = await upload_to_platform(zip_data)
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=502,
