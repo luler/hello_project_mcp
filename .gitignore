@@ -1,6 +1,4 @@
 .idea
-video
-dist/spider_douyin/video
-build
+__pycache__/
 
 .env
