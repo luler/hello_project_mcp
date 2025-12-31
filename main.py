@@ -5,7 +5,7 @@ import zipfile
 import dotenv
 import httpx
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi_mcp import FastApiMCP
 from pydantic import BaseModel, Field
 
@@ -46,7 +46,7 @@ def create_html_zip(html: str, filename: str = "index.html") -> bytes:
     return zip_buffer.getvalue()
 
 
-async def upload_to_platform(zip_data: bytes) -> dict:
+async def upload_to_platform(zip_data: bytes, client_ip: str) -> dict:
     """
     将ZIP文件上传到第三方平台
 
@@ -55,10 +55,14 @@ async def upload_to_platform(zip_data: bytes) -> dict:
     - code: 认证码
     - file: ZIP文件
     """
+    # 处理IP地址，将特殊字符替换为下划线
+    safe_ip = client_ip.replace(":", "_")
+    zip_filename = f"{safe_ip}.zip"
+
     async with httpx.AsyncClient(timeout=60.0) as client:
         # 构造 multipart/form-data 请求
         files = {
-            'file': ('hello_project_mcp.zip', zip_data, 'application/zip')
+            'file': (zip_filename, zip_data, 'application/zip')
         }
         data = {
             'code': UPLOAD_CODE
@@ -90,23 +94,28 @@ async def upload_to_platform(zip_data: bytes) -> dict:
     - 部署后会返回一个可访问的预览URL
     """
 )
-async def deploy_html(submission: HtmlSubmission) -> UploadResponse:
+async def deploy_html(submission: HtmlSubmission, request: Request) -> UploadResponse:
     """
     将HTML页面代码打包成ZIP文件并上传到预览平台
 
     流程：
     1. 接收完整的HTML页面代码
-    2. 在内存中打包生成 hello_project_mcp.zip（包含 index.html）
+    2. 在内存中打包生成 {client_ip}.zip（包含 index.html）
     3. 上传到预览平台接口
     4. 返回预览URL
     """
+    # 获取客户端IP（优先从X-Forwarded-For获取，支持反向代理）
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.client.host if request.client else "unknown"
+
     try:
         # 1. 在内存中创建ZIP文件
         zip_data = create_html_zip(submission.html)
 
         # 2. 上传到第三方平台
         try:
-            platform_result = await upload_to_platform(zip_data)
+            platform_result = await upload_to_platform(zip_data, client_ip)
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=502,
