@@ -1,0 +1,14 @@
+services:
+  hello_project_mcp:
+    image: ghcr.io/luler/hello_project_mcp:latest
+    #    build:
+    #      context: .
+    #      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - 7878:7878
+    environment:
+      # 预览平台基础URL
+      - UPLOAD_PLATFORM_BASE_URL=https://html.luler.top
+      # 认证码/项目标识
+      - UPLOAD_CODE=xxxx

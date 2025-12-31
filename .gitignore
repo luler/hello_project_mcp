@@ -1,0 +1,6 @@
+.idea
+video
+dist/spider_douyin/video
+build
+
+.env
