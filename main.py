@@ -81,7 +81,7 @@ def create_safe_filename(title: str, default: str = "hello_project_mcp") -> str:
     if title and title.strip():
         safe_title = re.sub(r'[^\w\u4e00-\u9fff\-]', '_', title.strip())
         safe_title = re.sub(r'_+', '_', safe_title).strip('_')  # 合并连续下划线
-        return f"{safe_title[:50]}.zip" if safe_title else f"{default}.zip"
+        return f"{safe_title[:100]}.zip" if safe_title else f"{default}.zip"
     return f"{default}.zip"
 
 
