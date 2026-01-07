@@ -1,5 +1,6 @@
 import io
 import os
+import re
 import zipfile
 
 import dotenv
@@ -23,6 +24,7 @@ UPLOAD_CODE = os.getenv('UPLOAD_CODE', "xxxxxx")  # 认证码/项目标识
 class HtmlSubmission(BaseModel):
     """HTML提交请求模型"""
     html: str = Field(..., description="完整的HTML页面代码")
+    title: str = Field(..., description="页面标题")
 
 
 class UploadResponse(BaseModel):
@@ -46,7 +48,7 @@ def create_html_zip(html: str, filename: str = "index.html") -> bytes:
     return zip_buffer.getvalue()
 
 
-async def upload_to_platform(zip_data: bytes) -> dict:
+async def upload_to_platform(zip_data: bytes, zip_filename: str = "hello_project_mcp.zip") -> dict:
     """
     将ZIP文件上传到第三方平台
 
@@ -55,8 +57,6 @@ async def upload_to_platform(zip_data: bytes) -> dict:
     - code: 认证码
     - file: ZIP文件
     """
-    # zip文件名
-    zip_filename = f"hello_project_mcp.zip"
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         # 构造 multipart/form-data 请求
@@ -74,6 +74,15 @@ async def upload_to_platform(zip_data: bytes) -> dict:
         )
         response.raise_for_status()
         return response.json()
+
+
+# 生成安全的文件名
+def create_safe_filename(title: str, default: str = "hello_project_mcp") -> str:
+    if title and title.strip():
+        safe_title = re.sub(r'[^\w\u4e00-\u9fff\-]', '_', title.strip())
+        safe_title = re.sub(r'_+', '_', safe_title).strip('_')  # 合并连续下划线
+        return f"{safe_title[:50]}.zip" if safe_title else f"{default}.zip"
+    return f"{default}.zip"
 
 
 # ==================== API 接口 ====================
@@ -107,10 +116,12 @@ async def deploy_html(submission: HtmlSubmission, request: Request) -> UploadRes
     try:
         # 1. 在内存中创建ZIP文件
         zip_data = create_html_zip(submission.html)
+        # 处理文件名
+        zip_filename = create_safe_filename(submission.title)
 
         # 2. 上传到第三方平台
         try:
-            platform_result = await upload_to_platform(zip_data)
+            platform_result = await upload_to_platform(zip_data, zip_filename)
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=502,
